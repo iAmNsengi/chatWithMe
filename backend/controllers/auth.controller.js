@@ -3,7 +3,29 @@ import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/generateToken.js";
 
 export const login = async (req, res) => {
-  res.send("Login user");
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      user?.password || ""
+    );
+    if (!user || !isPasswordCorrect) {
+      return res.status(404).json({ error: "Invalid username or password!" });
+    }
+    generateTokenAndSetCookie(user._id, res);
+    res.status(200).json({
+      _id: user._id,
+      fullName: user.fullName,
+      username: user.username,
+      profielPic: user.profilePic,
+    });
+  } catch (error) {
+    console.log("Error occured in login controller", error.message);
+    res
+      .status(500)
+      .json({ error: error.message || "Internal server error occurred!" });
+  }
 };
 
 export const logout = (req, res) => {
